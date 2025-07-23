@@ -1,0 +1,35 @@
+services:
+  springboot-api:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src:/app/src
+    depends_on:
+      - minio
+      - db
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: mediavault
+    ports:
+      - "5432:5432"
+    volumes:
+        - ./db_data:/var/lib/postgresql/data
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: minio-server
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    ports:
+      - "9000:9000" # MinIO S3 API port
+      - "9001:9001" # MinIO Console port
+    volumes:
+      - ./minio_data:/data # Persistent storage for MinIO data
+    restart: unless-stopped
+
