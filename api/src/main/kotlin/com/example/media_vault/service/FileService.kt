@@ -1,5 +1,6 @@
 package com.example.media_vault.service
 import File
+import com.example.media_vault.producer.MessageProducer
 import com.example.media_vault.repository.FileRepository
 import io.minio.BucketExistsArgs
 import io.minio.GetObjectArgs
@@ -48,7 +49,7 @@ fun getInputStreamFromFluxDataBuffer(data: Flux<DataBuffer?>): InputStream {
 
 
 @Service
-class FileService(private val minioClient: MinioClient, private val fileRepository: FileRepository) {
+class FileService(private val minioClient: MinioClient, private val fileRepository: FileRepository, private val messageProducer: MessageProducer) {
     @Value("\${minio.bucket.name}")
     lateinit var bucketName: String
     fun uploadFile(@Param("file") filePart: FilePart, contentLength: Long): Mono<String>{
@@ -59,7 +60,7 @@ class FileService(private val minioClient: MinioClient, private val fileReposito
         val objectName = Mono.fromCallable<String>(Callable {
             getInputStreamFromFluxDataBuffer(filePart.content())
                 .use fromCallable@{ inputStream ->
-                    val objectName: String? = fileId
+                    val objectName: String = fileId
                     val found = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build());
                     if (!found) {
                         minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
@@ -73,8 +74,10 @@ class FileService(private val minioClient: MinioClient, private val fileReposito
                             .contentType(filePart.headers().getContentType().toString())
                             .build()
                     )
+                    messageProducer.sendMessage(objectName, "fileExchange", "images")
                     return@fromCallable objectName
                 }
+
         })
         val fileToUpload: File = File(fileId=fileId)
         val saved = fileRepository.save(fileToUpload).mapNotNull({it.id})

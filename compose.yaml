@@ -1,13 +1,23 @@
 services:
   springboot-api:
-    build: .
+    build: ./api
     ports:
       - "8080:8080"
     volumes:
-      - ./src:/app/src
+      - ./api/src:/app/src
     depends_on:
       - minio
       - db
+      - rabbitmq
+      - springboot-worker
+  springboot-worker:
+    build: ./worker
+    volumes:
+      - ./worker/src:/app/src
+    depends_on:
+      - minio
+      - db
+      - rabbitmq
   db:
     image: postgres:latest
     restart: always
@@ -32,4 +42,12 @@ services:
     volumes:
       - ./minio_data:/data # Persistent storage for MinIO data
     restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - ./definitions.json:/etc/rabbitmq/definitions.json
 

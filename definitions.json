@@ -1,0 +1,29 @@
+    {
+      "queues": [
+        {
+          "name": "imageQueue",
+          "vhost": "/",
+          "durable": true,
+          "auto_delete": false,
+          "arguments": {}
+        }
+      ],
+      "exchanges": [{
+          "name": "fileExchange",
+          "vhost": "/",
+          "type": "direct",
+          "durable": true,
+          "auto_delete": false,
+          "arguments": {}
+        }],
+      "bindings": [        {
+          "source": "fileExchange",
+          "vhost": "/",
+          "destination": "imageQueue",
+          "destination_type": "queue",
+          "routing_key": "images",
+          "arguments": {}
+        }],
+      "users": [],
+      "vhosts": []
+    }
